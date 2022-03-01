@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
@@ -229,6 +230,58 @@ public class LHScript : MonoBehaviour {
             yield return new WaitForSeconds(2);
             w++;
             w %= 4;
+        }
+    }
+
+    //twitch plays
+    #pragma warning disable 414
+    private readonly string TwitchHelpMessage = @"!{0} x/y/z/w [Presses the specified coordinate button] | !{0} t/h/o/d [Presses the specified solid button] | Commands may be chained, for example '!{0} xxywh'";
+    #pragma warning restore 414
+    IEnumerator ProcessTwitchCommand(string command)
+    {
+        char[] abbrev = { 'x', 'y', 'z', 'w', 't', 'h', 'o', 'd' };
+        command = command.Replace(" ", "");
+        command = command.ToLowerInvariant();
+        for (int i = 0; i < command.Length; i++)
+        {
+            if (!abbrev.Contains(command[i]))
+                yield break;
+        }
+        yield return null;
+        for (int i = 0; i < command.Length; i++)
+        {
+            buttons[Array.IndexOf(abbrev, command[i])].OnInteract();
+            yield return new WaitForSeconds(0.1f);
+        }
+    }
+
+    IEnumerator TwitchHandleForcedSolve()
+    {
+        for (int w = 0; w < 4; w++)
+        {
+            for (int z = 0; z < 4; z++)
+            {
+                for (int y = 0; y < 4; y++)
+                {
+                    for (int x = 0; x < 4; x++)
+                    {
+                        if (clues[pos[3]][pos[2]][pos[1]][pos[0]] == 0)
+                        {
+                            buttons[sol[4][pos[3]][pos[2]][pos[1]][pos[0]] + 3].OnInteract();
+                            yield return new WaitForSeconds(0.1f);
+                            if (moduleSolved) yield break;
+                        }
+                        buttons[0].OnInteract();
+                        yield return new WaitForSeconds(0.1f);
+                    }
+                    buttons[1].OnInteract();
+                    yield return new WaitForSeconds(0.1f);
+                }
+                buttons[2].OnInteract();
+                yield return new WaitForSeconds(0.1f);
+            }
+            buttons[3].OnInteract();
+            yield return new WaitForSeconds(0.1f);
         }
     }
 }
