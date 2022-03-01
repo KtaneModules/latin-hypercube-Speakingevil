@@ -1,1 +1,1 @@
-# latin-hypercube
+#[ModKit Wiki](../../wiki)
