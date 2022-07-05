@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,7 +6,8 @@ using System.Text.RegularExpressions;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
-public class LHScript : MonoBehaviour {
+public class LHScript : MonoBehaviour
+{
 
     public KMAudio Audio;
     public KMBombModule module;
@@ -17,8 +18,8 @@ public class LHScript : MonoBehaviour {
     public Material[] io;
     public TextMesh[] btexts;
 
-    private readonly string[] snames = new string[4] { "Tetrahedron", "Hexahedron", "Octahedron", "Dodecahedron"};
-    private float[] xaxis = new float[4] { -0.0477f, -0.016f, 0.016f, 0.0477f};
+    private readonly string[] snames = new string[4] { "Tetrahedron", "Hexahedron", "Octahedron", "Dodecahedron" };
+    private float[] xaxis = new float[4] { -0.0477f, -0.016f, 0.016f, 0.0477f };
     private int[] ord = new int[4] { 0, 1, 2, 3 };
     private int[][][][][] sol = new int[5][][][][]
     {
@@ -36,6 +37,7 @@ public class LHScript : MonoBehaviour {
     private int[][][][] clues = new int[4][][][] { new int[4][][] { new int[4][] { new int[4], new int[4], new int[4], new int[4] }, new int[4][] { new int[4], new int[4], new int[4], new int[4] }, new int[4][] { new int[4], new int[4], new int[4], new int[4] }, new int[4][] { new int[4], new int[4], new int[4], new int[4] } }, new int[4][][] { new int[4][] { new int[4], new int[4], new int[4], new int[4] }, new int[4][] { new int[4], new int[4], new int[4], new int[4] }, new int[4][] { new int[4], new int[4], new int[4], new int[4] }, new int[4][] { new int[4], new int[4], new int[4], new int[4] } }, new int[4][][] { new int[4][] { new int[4], new int[4], new int[4], new int[4] }, new int[4][] { new int[4], new int[4], new int[4], new int[4] }, new int[4][] { new int[4], new int[4], new int[4], new int[4] }, new int[4][] { new int[4], new int[4], new int[4], new int[4] } }, new int[4][][] { new int[4][] { new int[4], new int[4], new int[4], new int[4] }, new int[4][] { new int[4], new int[4], new int[4], new int[4] }, new int[4][] { new int[4], new int[4], new int[4], new int[4] }, new int[4][] { new int[4], new int[4], new int[4], new int[4] } } };
     private int[] iter;
     private int zeros;
+    private bool prog;
     private int[] pos = new int[4];
 
     private static int moduleIDCounter;
@@ -58,25 +60,32 @@ public class LHScript : MonoBehaviour {
         int index = 0;
         while (index < removeorder.Count())
         {
-            int r = removeorder[0];
+            int r = removeorder[index];
             int recover = clues[r / 64][(r / 16) % 4][(r / 4) % 4][r % 4];
             clues[r / 64][(r / 16) % 4][(r / 4) % 4][r % 4] = 0;
-            iter = new int[2] { 256, 256};
+            iter = new int[2] { 256, 256 };
             if (Test(clues))
             {
-                removeorder.RemoveAt(0);
+                removeorder.RemoveAt(index);
                 zeros++;
             }
             else
             {
                 clues[r / 64][(r / 16) % 4][(r / 4) % 4][r % 4] = recover;
                 index++;
-            }            
+            }
+        }
+        for (int i = 0; i < 4; i++)
+        {
+            int r = Random.Range(0, 256);
+            while (clues[r / 64][(r / 16) % 4][(r / 4) % 4][r % 4] != 0)
+                r = Random.Range(0, 256);
+            clues[r / 64][(r / 16) % 4][(r / 4) % 4][r % 4] = sol[4][r / 64][(r / 16) % 4][(r / 4) % 4][r % 4];
         }
         Debug.LogFormat("[Latin Hypercube #{0}] The given shapes are:\n[Latin Hypercube #{0}] {1}", moduleID, string.Join(Environment.NewLine + "[Latin Hypercube #" + moduleID + "] " + Environment.NewLine + "[Latin Hypercube #" + moduleID + "] ", clues.Select(w => string.Join(Environment.NewLine + "[Latin Hypercube #" + moduleID + "] ", w.Select(z => string.Join("   ", z.Select(y => string.Join(" ", y.Select(x => "#THOD"[x].ToString()).ToArray())).ToArray())).ToArray())).ToArray()));
         Debug.LogFormat("[Latin Hypercube #{0}] Solution:\n[Latin Hypercube #{0}] {1}", moduleID, string.Join(Environment.NewLine + "[Latin Hypercube #" + moduleID + "] " + Environment.NewLine + "[Latin Hypercube #" + moduleID + "] ", sol[4].Select(w => string.Join(Environment.NewLine + "[Latin Hypercube #" + moduleID + "] ", w.Select(z => string.Join("   ", z.Select(y => string.Join(" ", y.Select(x => "#THOD"[x].ToString()).ToArray())).ToArray())).ToArray())).ToArray()));
         Fill(0);
-        for(int i = 0; i < 4; i++)
+        for (int i = 0; i < 4; i++)
         {
             Vector3 v = new Vector3(Random.Range(-1f, 1f), Random.Range(-1f, 1f), Random.Range(-1f, 1f));
             for (int j = 0; j < 16; j++)
@@ -84,7 +93,7 @@ public class LHScript : MonoBehaviour {
             StartCoroutine(Spin(64 + i, v));
         }
         Occupy(pos);
-        foreach(KMSelectable button in buttons)
+        foreach (KMSelectable button in buttons)
         {
             int b = buttons.IndexOf(button);
             button.OnInteract += delegate ()
@@ -99,13 +108,13 @@ public class LHScript : MonoBehaviour {
                             if (b - 3 == sol[4][pos[3]][pos[2]][pos[1]][pos[0]])
                             {
                                 Audio.PlaySoundAtTransform("Place", sphere.transform);
-                                Debug.LogFormat("[Latin Hyercube #{0}] Placed {1} at ({2},{3},{4},{5}).", moduleID, snames[b - 4], pos[0], pos[1], pos[2], pos[3]);
+                                Debug.LogFormat("[Latin Hypercube #{0}] Placed {1} at ({2},{3},{4},{5}).", moduleID, snames[b - 4], pos[0], pos[1], pos[2], pos[3]);
                                 clues[pos[3]][pos[2]][pos[1]][pos[0]] = b - 3;
                                 sphere.SetActive(false);
                                 rings[b - 4].material = io[0];
                                 solids[((b - 4) * 16) + (pos[1] * 4) + pos[2]].SetActive(true);
                                 zeros--;
-                                if (zeros < 86)
+                                if (zeros < 128)
                                 {
                                     moduleSolved = true;
                                     module.HandlePass();
@@ -118,10 +127,16 @@ public class LHScript : MonoBehaviour {
                                         g.SetActive(true);
                                     StartCoroutine(SolveAnim());
                                 }
+                                else
+                                {
+                                    if (prog)
+                                        StopCoroutine("Prog");
+                                    StartCoroutine("Prog");
+                                }
                             }
                             else
                             {
-                                Debug.LogFormat("[Latin Hyercube #{0}] {1} does not belong at ({2},{3},{4},{5}).", moduleID, snames[b - 4], pos[0], pos[1], pos[2], pos[3]);
+                                Debug.LogFormat("[Latin Hypercube #{0}] {1} does not belong at ({2},{3},{4},{5}).", moduleID, snames[b - 4], pos[0], pos[1], pos[2], pos[3]);
                                 module.HandleStrike();
                             }
                         }
@@ -131,6 +146,7 @@ public class LHScript : MonoBehaviour {
                         button.AddInteractionPunch(0.1f);
                         pos[b]++;
                         pos[b] %= 4;
+                        if(!prog)
                         btexts[b].text = pos[b].ToString();
                         Occupy(pos);
                         if (b == 3)
@@ -212,6 +228,21 @@ public class LHScript : MonoBehaviour {
         }
     }
 
+    private IEnumerator Prog()
+    {
+        prog = true;
+        int p = zeros - 127;
+        btexts[0].text = "\u2713";
+        btexts[1].text = (p / 100).ToString();
+        btexts[2].text = ((p / 10) % 10).ToString();
+        btexts[3].text = (p % 10).ToString();
+        yield return new WaitForSeconds(0.5f);
+        prog = false;
+        if(!moduleSolved)
+            for (int i = 0; i < 4; i++)
+                btexts[i].text = pos[i].ToString();
+    }
+
     private IEnumerator SolveAnim()
     {
         int w = pos[3];
@@ -234,9 +265,9 @@ public class LHScript : MonoBehaviour {
     }
 
     //twitch plays
-    #pragma warning disable 414
+#pragma warning disable 414
     private readonly string TwitchHelpMessage = @"!{0} x/y/z/w [Presses the specified coordinate button] | !{0} t/h/o/d [Presses the specified solid button] | Commands may be chained, for example '!{0} xxywh'";
-    #pragma warning restore 414
+#pragma warning restore 414
     IEnumerator ProcessTwitchCommand(string command)
     {
         char[] abbrev = { 'x', 'y', 'z', 'w', 't', 'h', 'o', 'd' };
