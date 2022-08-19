@@ -8,7 +8,6 @@ using Random = UnityEngine.Random;
 
 public class LHScript : MonoBehaviour
 {
-
     public KMAudio Audio;
     public KMBombModule module;
     public List<KMSelectable> buttons;
@@ -265,24 +264,45 @@ public class LHScript : MonoBehaviour
     }
 
     //twitch plays
+    private float _tpSpeed = 0.1f;
 #pragma warning disable 414
-    private readonly string TwitchHelpMessage = @"!{0} x/y/z/w [Presses the specified coordinate button] | !{0} t/h/o/d [Presses the specified solid button] | Commands may be chained, for example '!{0} xxywh'";
+    private readonly string TwitchHelpMessage = @"!{0} x/y/z/w [Presses the specified coordinate button] | !{0} t/h/o/d [Presses the specified solid button] | Commands may be chained, for example '!{0} xxywh' | !{0} setspeed 0.2 [Set a press speed between 0 and 1 seconds.]";
 #pragma warning restore 414
     IEnumerator ProcessTwitchCommand(string command)
     {
-        char[] abbrev = { 'x', 'y', 'z', 'w', 't', 'h', 'o', 'd' };
-        command = command.Replace(" ", "");
-        command = command.ToLowerInvariant();
+        var parameters = command.ToLowerInvariant().Split(' ');
+        var m = Regex.Match(parameters[0], @"^\s*setspeed\s*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        if (m.Success)
+        {
+            if (parameters.Length != 2)
+                yield break;
+            float tempSpeed;
+            if (!float.TryParse(parameters[1], out tempSpeed) || tempSpeed <= 0 || tempSpeed > 1)
+            {
+                yield return "sendtochaterror " + parameters[1] + " is not a valid speed! Press speed must be between 0 and 1 seconds.";
+                yield break;
+            }
+            yield return null;
+            _tpSpeed = tempSpeed;
+            yield return "sendtochat Latin Hypercube's press speed has been set to " + parameters[1];
+            yield break;
+        }
+        var chars = "xyzwthod ".ToCharArray();
+        var list = new List<int>();
         for (int i = 0; i < command.Length; i++)
         {
-            if (!abbrev.Contains(command[i]))
+            int ix = Array.IndexOf(chars, command[i]);
+            if (ix == -1)
                 yield break;
+            if (ix == 8)
+                continue;
+            list.Add(ix);
         }
         yield return null;
-        for (int i = 0; i < command.Length; i++)
+        for (int i = 0; i < list.Count; i++)
         {
-            buttons[Array.IndexOf(abbrev, command[i])].OnInteract();
-            yield return new WaitForSeconds(0.1f);
+            buttons[list[i]].OnInteract();
+            yield return new WaitForSeconds(_tpSpeed);
         }
     }
 
